@@ -10,6 +10,19 @@ This is the sample application for the **GitHub Copilot CLI** workshop. It's a d
 > [!WARNING]
 > This project is a teaching sample for a GitHub Copilot CLI workshop. It is provided as-is for learning and demonstration purposes and is not intended, hardened, or supported for production use.
 
+## Filtering open roles
+
+Choose a department, a location, or both to update the roles list immediately.
+Each filter accepts one value; when both are selected, roles must match both.
+Options always include every unique value from the postings, alphabetically,
+including remote location labels. Results retain newest-first ordering.
+
+Choose **All departments** or **All locations** to clear that filter, or use
+**Reset filters** to restore every role. A clear empty state explains when no
+roles match. Selections apply only to the current page and reload starts
+unfiltered; they are not stored or added to the URL. Filtering requires
+JavaScript, but all roles remain browsable without it.
+
 ## Tech stack
 
 - **[Astro](https://astro.build/)** — static output by default, with a single on-demand route for the apply endpoint (via the `@astrojs/node` adapter)
@@ -43,7 +56,7 @@ npm run dev
 
 - `src/content/jobs/` — job postings (Markdown + frontmatter)
 - `src/content.config.ts` — content collection schema
-- `src/lib/jobs.ts` — pure helpers over `Job[]` (sorting, formatting)
+- `src/lib/jobs.ts` — pure helpers over `Job[]` (sorting, formatting, filter options, filtering)
 - `src/lib/applications.ts` — application validation schema + insert helper
 - `src/lib/db.ts` — Drizzle/libSQL client for the `applications` table
 - `src/pages/` — `index.astro` (listing), `roles/[slug].astro` (detail + apply form), `api/apply.ts` (on-demand endpoint), `thanks.astro`, `about.astro`, `404.astro`
@@ -68,7 +81,7 @@ This repository is a GitHub template. When you create a new repository from it, 
 
 The workflow only runs on repositories created from the template (the `if: ${{ !github.event.repository.is_template }}` guard skips the template itself), and after creating the issues it removes itself and the `.github/bootstrap-issues/` folder in a cleanup commit so it never runs again.
 
-The starter intentionally leaves location labels off role cards while retaining location data and detail-page labels for the workshop warm-up. The **Filter roles by department and location** issue (`workshop:filtering`) starts the longer feature exercise. Filtering, the TSDoc instruction addition, the `quality-checks` skill's results formatting, and `.github/agents/qa.agent.md` are left for learners to implement.
+The starter intentionally leaves location labels off role cards while retaining location data and detail-page labels for the workshop warm-up. The **Filter roles by department and location** issue (`workshop:filtering`) starts the longer feature exercise; department and location filtering are now implemented in this repository, with TSDoc documentation for the new TypeScript. The `quality-checks` skill's results formatting and `.github/agents/qa.agent.md` are left for learners to implement.
 
 The only bundled skill is `.github/skills/quality-checks/SKILL.md`. The starter includes no custom agents or MCP server configuration: learners configure Playwright MCP in Copilot CLI and create the QA agent during the workshop. GitHub MCP is built into Copilot CLI and needs no repository server configuration.
 
