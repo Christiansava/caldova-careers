@@ -1,0 +1,130 @@
+---
+import EmptyState from './EmptyState.astro';
+import RoleCard from './RoleCard.astro';
+import { getDepartments, getLocations } from '../lib/jobs';
+import type { Job } from '../types/job';
+
+/** Data supplied by the page for the prerendered listing and its client-side filters. */
+interface Props {
+  /** Roles in the order they should appear before and after filtering. */
+  jobs: Job[];
+}
+
+const { jobs } = Astro.props;
+---
+
+{jobs.length === 0 ? (
+  <EmptyState text="There are no open roles right now. Check back soon." />
+) : (
+  <div data-role-listing data-jobs={JSON.stringify(jobs)}>
+    <fieldset hidden class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto] gap-4 mb-6">
+      <legend class="sr-only">Filter roles</legend>
+      <div>
+        <label for="department-filter" class="block text-sm font-medium text-slate-200 mb-2">
+          Department
+        </label>
+        <select
+          id="department-filter"
+          data-testid="department-filter"
+          class="w-full rounded-lg bg-slate-800 border border-slate-700 text-slate-100 p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        >
+          <option value="">All departments</option>
+          {getDepartments(jobs).map((department) => <option value={department}>{department}</option>)}
+        </select>
+      </div>
+      <div>
+        <label for="location-filter" class="block text-sm font-medium text-slate-200 mb-2">
+          Location
+        </label>
+        <select
+          id="location-filter"
+          data-testid="location-filter"
+          class="w-full rounded-lg bg-slate-800 border border-slate-700 text-slate-100 p-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        >
+          <option value="">All locations</option>
+          {getLocations(jobs).map((location) => <option value={location}>{location}</option>)}
+        </select>
+      </div>
+      <button
+        type="button"
+        data-testid="reset-filters"
+        class="self-end rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-medium px-6 py-3 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+      >
+        Reset filters
+      </button>
+    </fieldset>
+
+    <p role="status" aria-live="polite" aria-atomic="true" data-testid="roles-count" class="text-slate-300 mb-4">
+      {jobs.length} {jobs.length === 1 ? 'role' : 'roles'} found
+    </p>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" data-testid="roles-grid">
+      {jobs.map((job) => <RoleCard job={job} />)}
+    </div>
+    <div hidden data-filter-empty>
+      <EmptyState text="No roles match these filters. Try another department or location, or reset the filters." />
+    </div>
+  </div>
+)}
+
+<script>
+  import { filterJobs } from '../lib/jobs';
+  import type { Job } from '../types/job';
+
+  document.querySelectorAll<HTMLElement>('[data-role-listing]').forEach((listing) => {
+    const controls = listing.querySelector('fieldset');
+    const department = listing.querySelector<HTMLSelectElement>('[data-testid="department-filter"]');
+    const location = listing.querySelector<HTMLSelectElement>('[data-testid="location-filter"]');
+    const reset = listing.querySelector<HTMLButtonElement>('[data-testid="reset-filters"]');
+    const count = listing.querySelector<HTMLElement>('[data-testid="roles-count"]');
+    const grid = listing.querySelector<HTMLElement>('[data-testid="roles-grid"]');
+    const emptyState = listing.querySelector<HTMLElement>('[data-filter-empty]');
+    const serializedJobs = listing.dataset.jobs;
+
+    if (!controls || !department || !location || !reset || !count || !grid || !emptyState || !serializedJobs) {
+      throw new Error('Role listing is missing required filter markup or job data.');
+    }
+
+    const jobs: Job[] = JSON.parse(serializedJobs);
+    const cards = [...listing.querySelectorAll<HTMLElement>('[data-testid="role-card"]')].map((card) => {
+      const slug = card.dataset.jobId;
+      if (!slug) {
+        throw new Error('Role card is missing its job identifier.');
+      }
+      return { card, slug };
+    });
+
+    /** Applies both selections to existing cards and announces the resulting count. */
+    const updateResults = (): void => {
+      const matches = filterJobs(jobs, {
+        department: department.value,
+        location: location.value,
+      });
+      const matchingSlugs = new Set(matches.map((job) => job.slug));
+      cards.forEach(({ card, slug }) => {
+        card.hidden = !matchingSlugs.has(slug);
+      });
+      grid.hidden = matches.length === 0;
+      emptyState.hidden = matches.length !== 0;
+      count.textContent = `${matches.length} ${matches.length === 1 ? 'role' : 'roles'} found`;
+    };
+
+    /** Clears both selections and restores all cards in their prerendered order. */
+    const resetFilters = (): void => {
+      department.value = '';
+      location.value = '';
+      updateResults();
+    };
+
+    department.addEventListener('change', updateResults);
+    location.addEventListener('change', updateResults);
+    reset.addEventListener('click', resetFilters);
+    resetFilters();
+    controls.hidden = false;
+  });
+</script>
+
+<style>
+  [data-role-listing] :global([hidden]) {
+    display: none !important;
+  }
+</style>

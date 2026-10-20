@@ -18,3 +18,8 @@ Use this skill when you need to validate changes in Caldova Careers. For a gener
 ## Database notes
 
 The only database table is `applications`. Database tests use `createTestDatabase()` for migrated in-memory databases; this routine does not need a local database setup or seed step. Jobs are Markdown content files.
+
+
+## Results output formatting
+
+Upon completion, report each command that ran and whether it passed, failed, or was blocked. Include test counts, durations, errors, warnings, and other metrics only when the tool reports them. Identify the next action for any failure or blocker, and never describe a skipped or incomplete check as passed.
